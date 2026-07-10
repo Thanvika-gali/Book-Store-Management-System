@@ -40,13 +40,6 @@ const BookDetails = () => {
       try {
         const bookRes = await api.get(`/books/${id}`);
         const relatedRes = await api.get(`/books/${id}/related`);
-        const reviewsRes = await api.get(`/reviews/book/${id}`); // Note: API can fetch reviews via /reviews/book/{id} or we write custom.
-        
-        // Wait, on the backend, we defined `/api/reviews` POST. We also need a GET reviews path!
-        // Let's verify what reviews path we have. In the schema we havereviews. Let's see: on controller we didn't add GET reviews.
-        // Let's fetch book details and since BookDto doesn't nesting reviews, let's write a mock or add a reviews list or catch error.
-        // Actually, let's write a GET controller path `/api/reviews/book/{bookId}` inside the backend controllers later, or fetch from general review list.
-        // For now, let's wrap this in try-catch. If it fails, fallback to empty list or we can write the backend endpoint!
         
         setBook(bookRes.data);
         setRelated(relatedRes.data);
