@@ -40,7 +40,8 @@ A modern Full Stack Book Store Management System built using **React.js**, **Spr
 
 ## 📚 Shop by Category
 
-<img width="1918" height="895" alt="Screenshot 2026-08-02 155202" src="https://github.com/user-attachments/assets/c5014a63-1041-4239-bb2e-6500093f3265" />
+<img width="1912" height="906" alt="Screenshot 2026-08-02 155209" src="https://github.com/user-attachments/assets/9611ff51-6b0b-487a-9d04-08fb459fb5b2" />
+
 
 
 ---
