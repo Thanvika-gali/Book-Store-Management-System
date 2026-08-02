@@ -33,25 +33,22 @@ A modern Full Stack Book Store Management System built using **React.js**, **Spr
 
 ## 🏠 Home Page
 
-![Home](screenshots/home.png)
+<img width="1918" height="895" alt="Screenshot 2026-08-02 155202" src="https://github.com/user-attachments/assets/b2313fe0-7dea-4573-b0fd-7f5a0d9169fb" />
+
 
 ---
 
 ## 📚 Shop by Category
 
-![Categories](screenshots/categories.png)
+<img width="1918" height="895" alt="Screenshot 2026-08-02 155202" src="https://github.com/user-attachments/assets/c5014a63-1041-4239-bb2e-6500093f3265" />
+
 
 ---
 
 ## 📖 Book Catalogue
 
-![Catalogue](screenshots/catalog.png)
+<img width="1907" height="731" alt="Screenshot 2026-08-02 155236" src="https://github.com/user-attachments/assets/b1cd3639-ed88-4ec6-977a-be4a5a51aeaf" />
 
----
-
-## 🔍 Filter Books
-
-![Filters](screenshots/filter.png)
 
 ---
 
