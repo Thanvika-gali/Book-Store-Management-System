@@ -14,20 +14,24 @@ const BookCatalog = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Pagination & Search States
+  // Pagination & Search States derived from searchParams
   const [totalPages, setTotalPages] = useState(0);
   const currentPage = parseInt(searchParams.get('page') || '0');
   const searchKeyword = searchParams.get('search') || '';
-  const initialCategory = searchParams.get('category') || '';
-  const initialDiscount = searchParams.get('discount') === 'true';
+  const selectedCategory = searchParams.get('category') || '';
+  const language = searchParams.get('language') || '';
+  const onlyDiscounted = searchParams.get('discount') === 'true';
+  const sortBy = searchParams.get('sort') || 'newest,desc';
 
-  // Filter States
-  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
-  const [language, setLanguage] = useState('');
-  const [onlyDiscounted, setOnlyDiscounted] = useState(initialDiscount);
-  const [sortBy, setSortBy] = useState('newest,desc');
+  // Input states for smooth price typing (synchronized on blur/enter or reset)
+  const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') || '');
+  const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '');
+
+  // Synchronize price input states when searchParams changes (e.g. on reset)
+  useEffect(() => {
+    setMinPrice(searchParams.get('minPrice') || '');
+    setMaxPrice(searchParams.get('maxPrice') || '');
+  }, [searchParams]);
 
   // Load Categories on mount
   useEffect(() => {
@@ -54,8 +58,12 @@ const BookCatalog = () => {
         
         if (searchKeyword) params.append('keyword', searchKeyword);
         if (selectedCategory) params.append('categoryId', selectedCategory);
-        if (minPrice) params.append('minPrice', minPrice);
-        if (maxPrice) params.append('maxPrice', maxPrice);
+        
+        const minPriceParam = searchParams.get('minPrice') || '';
+        const maxPriceParam = searchParams.get('maxPrice') || '';
+        if (minPriceParam) params.append('minPrice', minPriceParam);
+        if (maxPriceParam) params.append('maxPrice', maxPriceParam);
+        
         if (language) params.append('language', language);
         if (onlyDiscounted) params.append('discount', 'true');
 
@@ -70,28 +78,74 @@ const BookCatalog = () => {
     };
     
     fetchCatalog();
-  }, [currentPage, searchKeyword, selectedCategory, minPrice, maxPrice, language, onlyDiscounted, sortBy]);
+  }, [searchParams]);
 
   const handleCategoryChange = (catId) => {
-    setSelectedCategory(catId);
-    resetPagination();
+    const newParams = new URLSearchParams(searchParams);
+    if (catId) {
+      newParams.set('category', catId);
+    } else {
+      newParams.delete('category');
+    }
+    newParams.set('page', '0');
+    setSearchParams(newParams);
+  };
+
+  const handleLanguageChange = (lang) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (lang) {
+      newParams.set('language', lang);
+    } else {
+      newParams.delete('language');
+    }
+    newParams.set('page', '0');
+    setSearchParams(newParams);
+  };
+
+  const handleDiscountChange = (checked) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (checked) {
+      newParams.set('discount', 'true');
+    } else {
+      newParams.delete('discount');
+    }
+    newParams.set('page', '0');
+    setSearchParams(newParams);
+  };
+
+  const handlePriceApply = (type, val) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (type === 'min') {
+      if (val) newParams.set('minPrice', val);
+      else newParams.delete('minPrice');
+    } else {
+      if (val) newParams.set('maxPrice', val);
+      else newParams.delete('maxPrice');
+    }
+    newParams.set('page', '0');
+    setSearchParams(newParams);
   };
 
   const handlePriceReset = () => {
-    setMinPrice('');
-    setMaxPrice('');
-    resetPagination();
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('minPrice');
+    newParams.delete('maxPrice');
+    newParams.set('page', '0');
+    setSearchParams(newParams);
   };
 
-  const resetPagination = () => {
-    searchParams.set('page', '0');
-    setSearchParams(searchParams);
+  const handleSortChange = (sortVal) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('sort', sortVal);
+    newParams.set('page', '0');
+    setSearchParams(newParams);
   };
 
   const handlePageChange = (newPage) => {
     if (newPage >= 0 && newPage < totalPages) {
-      searchParams.set('page', newPage.toString());
-      setSearchParams(searchParams);
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set('page', newPage.toString());
+      setSearchParams(newParams);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -143,7 +197,9 @@ const BookCatalog = () => {
                   type="number"
                   placeholder="Min"
                   value={minPrice}
-                  onChange={(e) => { setMinPrice(e.target.value); resetPagination(); }}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  onBlur={() => handlePriceApply('min', minPrice)}
+                  onKeyDown={(e) => e.key === 'Enter' && handlePriceApply('min', minPrice)}
                   className="w-full rounded-xl border border-gray-200 p-2 text-xs outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-800"
                 />
                 <span className="text-gray-400 text-xs">to</span>
@@ -151,7 +207,9 @@ const BookCatalog = () => {
                   type="number"
                   placeholder="Max"
                   value={maxPrice}
-                  onChange={(e) => { setMaxPrice(e.target.value); resetPagination(); }}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  onBlur={() => handlePriceApply('max', maxPrice)}
+                  onKeyDown={(e) => e.key === 'Enter' && handlePriceApply('max', maxPrice)}
                   className="w-full rounded-xl border border-gray-200 p-2 text-xs outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-800"
                 />
               </div>
@@ -167,13 +225,14 @@ const BookCatalog = () => {
               <span className="text-2xs font-semibold text-gray-400 uppercase tracking-wider">Language</span>
               <select
                 value={language}
-                onChange={(e) => { setLanguage(e.target.value); resetPagination(); }}
+                onChange={(e) => handleLanguageChange(e.target.value)}
                 className="w-full rounded-xl border border-gray-200 p-2.5 text-xs outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-800"
               >
                 <option value="">All Languages</option>
                 <option value="English">English</option>
-                <option value="Spanish">Spanish</option>
-                <option value="French">French</option>
+                <option value="Hindi">Hindi</option>
+                <option value="Telugu">Telugu</option>
+                <option value="Tamil">Tamil</option>
               </select>
             </div>
 
@@ -183,7 +242,7 @@ const BookCatalog = () => {
                 <input
                   type="checkbox"
                   checked={onlyDiscounted}
-                  onChange={(e) => { setOnlyDiscounted(e.target.checked); resetPagination(); }}
+                  onChange={(e) => handleDiscountChange(e.target.checked)}
                   className="h-4.5 w-4.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 />
                 <span>Discount Offers Only</span>
@@ -209,7 +268,7 @@ const BookCatalog = () => {
               <ArrowUpDown className="h-4 w-4 text-gray-400" />
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
+                onChange={(e) => handleSortChange(e.target.value)}
                 className="rounded-xl border border-gray-200 p-2 text-xs outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-800"
               >
                 <option value="newest,desc">Newest Releases</option>
@@ -236,11 +295,6 @@ const BookCatalog = () => {
               </p>
               <button
                 onClick={() => {
-                  setSelectedCategory('');
-                  setMinPrice('');
-                  setMaxPrice('');
-                  setLanguage('');
-                  setOnlyDiscounted(false);
                   setSearchParams({});
                 }}
                 className="inline-flex h-10 items-center justify-center rounded-xl bg-primary-500 px-6 text-xs font-semibold text-white hover:bg-primary-600 transition-all duration-200 hover:-translate-y-0.5"

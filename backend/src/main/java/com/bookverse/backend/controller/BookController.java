@@ -104,6 +104,11 @@ public class BookController {
         return ResponseEntity.ok(bookService.getRelatedBooks(id));
     }
 
+    @GetMapping("/books/{id}/excerpts")
+    public ResponseEntity<List<BookExcerptDto>> getExcerpts(@PathVariable Long id) {
+        return ResponseEntity.ok(bookService.getBookExcerpts(id));
+    }
+
     @GetMapping("/categories")
     public ResponseEntity<List<CategoryDto>> getCategories() {
         return ResponseEntity.ok(bookService.getAllCategories());

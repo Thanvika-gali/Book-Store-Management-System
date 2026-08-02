@@ -4,13 +4,14 @@ import { useForm } from 'react-hook-form';
 import { 
   Star, ShoppingCart, Heart, Calendar, BookOpen, 
   Hash, Globe, FileText, Landmark, Loader2, AlertCircle, 
-  MessageSquare, User 
+  MessageSquare, User, CheckCircle2, Clock, ArrowLeftRight, Info
 } from 'lucide-react';
 import { DetailSkeleton } from '../components/Skeleton';
 import BookCard from '../components/BookCard';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import BookExcerptReaderModal from '../components/BookExcerptReaderModal';
 
 const BookDetails = () => {
   const { id } = useParams();
@@ -27,6 +28,11 @@ const BookDetails = () => {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [buyQty, setBuyQty] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [showReader, setShowReader] = useState(false);
+  const [trackerProgress, setTrackerProgress] = useState(null);
+  const [activeLoan, setActiveLoan] = useState(null);
+  const [rentDuration, setRentDuration] = useState(7);
+  const [loaning, setLoaning] = useState(false);
 
   // Review Form States
   const [reviewRating, setReviewRating] = useState(5);
@@ -59,6 +65,23 @@ const BookDetails = () => {
         if (isAuthenticated) {
           const wishRes = await api.get('/users/wishlist');
           setIsWishlisted(wishRes.data.some((item) => item.bookId === bookRes.data.id));
+          try {
+            const progressRes = await api.get(`/users/reading-tracker/status/${id}`);
+            if (progressRes.status === 200 || progressRes.status === 204) {
+              setTrackerProgress(progressRes.data);
+            }
+          } catch (e) {
+            // No progress logged yet
+          }
+          try {
+            const libraryRes = await api.get('/library/my-books');
+            const foundLoan = libraryRes.data.find(
+              (r) => r.bookId === bookRes.data.id && (r.status === 'ACTIVE' || r.status === 'OVERDUE')
+            );
+            setActiveLoan(foundLoan);
+          } catch (e) {
+            // No loan logged yet
+          }
         }
       } catch (err) {
         console.error('Error fetching book details:', err);
@@ -96,6 +119,42 @@ const BookDetails = () => {
       setIsWishlisted(!isWishlisted);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleCheckoutLibrary = async (type) => {
+    if (!isAuthenticated) {
+      window.location.href = '/login';
+      return;
+    }
+    setLoaning(true);
+    try {
+      const response = await api.post('/library/checkout', {
+        bookId: book.id,
+        rentalType: type,
+        durationDays: type === 'BORROW' ? 14 : Number(rentDuration)
+      });
+      setActiveLoan(response.data);
+      alert(`Successfully checked out: ${book.title}!`);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Checkout failed.');
+    } finally {
+      setLoaning(false);
+    }
+  };
+
+  const handleReturnBookDetail = async () => {
+    if (!activeLoan) return;
+    if (!window.confirm('Return this book to the library?')) return;
+    setLoaning(true);
+    try {
+      await api.post(`/library/return/${activeLoan.id}`);
+      setActiveLoan(null);
+      alert('Book returned successfully!');
+    } catch (err) {
+      alert('Return failed.');
+    } finally {
+      setLoaning(false);
     }
   };
 
@@ -288,6 +347,132 @@ const BookDetails = () => {
             </button>
           </div>
 
+          {/* Interactive Preview & Tracker Actions */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100 dark:border-slate-800">
+            <button
+              onClick={() => setShowReader(true)}
+              className="flex-1 flex h-10 items-center justify-center gap-2 rounded-xl border border-primary-500 text-primary-500 text-xs font-bold hover:bg-primary-500 hover:text-white transition-all shadow-sm cursor-pointer"
+            >
+              <BookOpen className="h-4.5 w-4.5" />
+              Read Chapter Preview
+            </button>
+
+            {isAuthenticated && (
+              <div className="flex-1 flex items-center gap-2">
+                <span className="text-3xs font-bold text-gray-400 uppercase tracking-wide">Track:</span>
+                <select
+                  value={trackerProgress ? trackerProgress.status : ''}
+                  onChange={async (e) => {
+                    const status = e.target.value;
+                    if (!status) return;
+                    try {
+                      const res = await api.post('/users/reading-tracker/progress', {
+                        bookId: book.id,
+                        status: status,
+                        currentPage: status === 'COMPLETED' ? book.pages : (trackerProgress ? trackerProgress.currentPage : 0)
+                      });
+                      setTrackerProgress(res.data);
+                      alert(`Reading progress updated to: ${status.replace(/_/g, ' ')}`);
+                    } catch (err) {
+                      console.error(err);
+                      alert('Failed to update progress.');
+                    }
+                  }}
+                  className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-bold dark:border-slate-800 dark:bg-slate-900 outline-none"
+                >
+                  <option value="">-- Start Tracking --</option>
+                  <option value="WANT_TO_READ">Want to Read</option>
+                  <option value="READING">Currently Reading</option>
+                  <option value="COMPLETED">Completed</option>
+                </select>
+              </div>
+            )}
+          </div>
+
+          {/* Library Borrow & Paid Rentals box */}
+          <div className="p-4.5 rounded-2xl bg-indigo-50/20 border border-indigo-100 dark:bg-slate-900/40 dark:border-slate-800 space-y-4">
+            <h3 className="font-outfit font-bold text-xs uppercase tracking-wider text-indigo-500 flex items-center gap-1.5 select-none">
+              <BookOpen className="h-4.5 w-4.5" />
+              Digital Library & Rentals
+            </h3>
+            
+            {activeLoan ? (
+              <div className="space-y-3.5">
+                <div className="flex items-start gap-2.5 p-3 bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800">
+                  <Info className="h-4.5 w-4.5 text-indigo-500 shrink-0 mt-0.5" />
+                  <div className="text-3xs font-medium leading-relaxed">
+                    <span className="font-bold text-gray-800 dark:text-slate-100 block">
+                      Active Loan status ({activeLoan.rentalType})
+                    </span>
+                    You checked out this book. Due date is <span className="font-bold text-primary-500">{new Date(activeLoan.dueDate).toLocaleDateString()}</span>.
+                  </div>
+                </div>
+                
+                <div className="flex gap-3.5">
+                  <button
+                    onClick={() => setShowReader(true)}
+                    className="flex-1 flex h-9 items-center justify-center gap-1.5 rounded-xl bg-primary-500 text-3xs font-bold text-white shadow-soft hover:bg-primary-600 cursor-pointer"
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    Read Now
+                  </button>
+                  <button
+                    disabled={loaning}
+                    onClick={handleReturnBookDetail}
+                    className="flex-1 flex h-9 items-center justify-center gap-1.5 rounded-xl border border-gray-200 text-3xs font-bold text-gray-600 hover:bg-gray-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
+                  >
+                    <ArrowLeftRight className="h-4 w-4" />
+                    Return early
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {/* Borrow card */}
+                  <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800 flex flex-col justify-between space-y-2">
+                    <div>
+                      <span className="text-4xs font-extrabold uppercase text-green-500 tracking-wider block">Free Library Borrow</span>
+                      <p className="text-5xs text-gray-400 font-medium leading-normal mt-0.5">Borrow for 14 days. Limit of 3 active loans total.</p>
+                    </div>
+                    <button
+                      disabled={loaning}
+                      onClick={() => handleCheckoutLibrary('BORROW')}
+                      className="w-full flex h-8 items-center justify-center rounded-lg bg-green-500 text-3xs font-bold text-white hover:bg-green-600 transition-colors cursor-pointer"
+                    >
+                      {loaning ? 'Loaning...' : 'Borrow (14 Days)'}
+                    </button>
+                  </div>
+
+                  {/* Rent card */}
+                  <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800 flex flex-col justify-between space-y-2">
+                    <div>
+                      <span className="text-4xs font-extrabold uppercase text-indigo-500 tracking-wider block">Paid Book Rental</span>
+                      <div className="flex gap-2 items-center mt-1">
+                        <select
+                          value={rentDuration}
+                          onChange={(e) => setRentDuration(Number(e.target.value))}
+                          className="rounded-lg border border-gray-200 px-2 py-1 text-4xs font-bold dark:border-slate-800 bg-transparent outline-none text-slate-800 dark:text-slate-300"
+                        >
+                          <option value="7" className="text-slate-800">7 Days (10% price)</option>
+                          <option value="14" className="text-slate-800">14 Days (15% price)</option>
+                          <option value="30" className="text-slate-800">30 Days (25% price)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <button
+                      disabled={loaning}
+                      onClick={() => handleCheckoutLibrary('RENT')}
+                      className="w-full flex h-8 items-center justify-center rounded-lg bg-indigo-500 text-3xs font-bold text-white hover:bg-indigo-600 transition-colors cursor-pointer"
+                    >
+                      {loaning ? 'Loaning...' : 'Rent Book'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Book Information list */}
           <div className="grid grid-cols-2 gap-4 pt-6 border-t border-gray-100 dark:border-slate-800">
             <div className="flex items-center gap-2.5 text-xs text-gray-500 dark:text-slate-400">
@@ -454,6 +639,14 @@ const BookDetails = () => {
           </div>
         </section>
       )}
+
+      {/* Excerpt Reader Modal */}
+      <BookExcerptReaderModal
+        isOpen={showReader}
+        onClose={() => setShowReader(false)}
+        bookId={book.id}
+        bookTitle={book.title}
+      />
 
     </div>
   );

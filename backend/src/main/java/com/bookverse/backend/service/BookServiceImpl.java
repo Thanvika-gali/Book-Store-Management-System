@@ -26,19 +26,22 @@ public class BookServiceImpl implements BookService {
     private final PublisherRepository publisherRepository;
     private final SearchHistoryRepository searchHistoryRepository;
     private final UserRepository userRepository;
+    private final BookExcerptRepository bookExcerptRepository;
 
     public BookServiceImpl(BookRepository bookRepository,
                            CategoryRepository categoryRepository,
                            AuthorRepository authorRepository,
                            PublisherRepository publisherRepository,
                            SearchHistoryRepository searchHistoryRepository,
-                           UserRepository userRepository) {
+                           UserRepository userRepository,
+                           BookExcerptRepository bookExcerptRepository) {
         this.bookRepository = bookRepository;
         this.categoryRepository = categoryRepository;
         this.authorRepository = authorRepository;
         this.publisherRepository = publisherRepository;
         this.searchHistoryRepository = searchHistoryRepository;
         this.userRepository = userRepository;
+        this.bookExcerptRepository = bookExcerptRepository;
     }
 
     @Override
@@ -193,6 +196,22 @@ public class BookServiceImpl implements BookService {
         Specification<Book> spec = (root, q, cb) -> cb.like(cb.lower(root.get("title")), "%" + query.toLowerCase() + "%");
         return bookRepository.findAll(spec, topFive).getContent().stream()
                 .map(Book::getTitle)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<BookExcerptDto> getBookExcerpts(Long bookId) {
+        if (!bookRepository.existsById(bookId)) {
+            throw new ResourceNotFoundException("Book not found with ID: " + bookId);
+        }
+        return bookExcerptRepository.findByBookIdOrderByChapterNumberAsc(bookId).stream()
+                .map(e -> BookExcerptDto.builder()
+                        .id(e.getId())
+                        .bookId(e.getBook().getId())
+                        .chapterNumber(e.getChapterNumber())
+                        .chapterTitle(e.getChapterTitle())
+                        .content(e.getContent())
+                        .build())
                 .collect(Collectors.toList());
     }
 }

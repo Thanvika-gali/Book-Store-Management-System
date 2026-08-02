@@ -20,6 +20,8 @@ import Checkout from './pages/Checkout';
 import Orders from './pages/Orders';
 import Profile from './pages/Profile';
 import Wishlist from './pages/Wishlist';
+import ReadingTracker from './pages/ReadingTracker';
+import Library from './pages/Library';
 
 // Auth Pages
 import Login from './pages/Login';
@@ -34,6 +36,7 @@ import ManageCategories from './pages/ManageCategories';
 import ManageOrders from './pages/ManageOrders';
 import ManageUsers from './pages/ManageUsers';
 import Analytics from './pages/Analytics';
+import ManageLibrary from './pages/ManageLibrary';
 
 function App() {
   return (
@@ -53,6 +56,8 @@ function App() {
                 <Route path="orders" element={<Orders />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="wishlist" element={<Wishlist />} />
+                <Route path="reading-tracker" element={<ReadingTracker />} />
+                <Route path="library" element={<Library />} />
               </Route>
 
               {/* Authentication Routes */}
@@ -71,6 +76,7 @@ function App() {
                 <Route path="orders" element={<ManageOrders />} />
                 <Route path="users" element={<ManageUsers />} />
                 <Route path="analytics" element={<Analytics />} />
+                <Route path="library" element={<ManageLibrary />} />
               </Route>
 
               {/* Fallback Redirect */}

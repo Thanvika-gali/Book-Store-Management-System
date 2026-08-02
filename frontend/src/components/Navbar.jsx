@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   ShoppingCart, Search, LogOut, User, BookOpen, 
-  Heart, ChevronDown, Bell, Sun, Moon, Grid, ShieldAlert 
+  Heart, ChevronDown, Bell, Sun, Moon, Grid, ShieldAlert, Flame 
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -277,14 +277,24 @@ const Navbar = () => {
 
                     {/* Admin Access Panel */}
                     {isAdmin() && (
-                      <Link
-                        to="/admin"
-                        onClick={() => setShowUserDropdown(false)}
-                        className="flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-xs font-medium text-primary-500 hover:bg-primary-50 dark:hover:bg-slate-800/50"
-                      >
-                        <ShieldAlert className="h-4.5 w-4.5" />
-                        Admin Dashboard
-                      </Link>
+                      <>
+                        <Link
+                          to="/admin"
+                          onClick={() => setShowUserDropdown(false)}
+                          className="flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-xs font-medium text-primary-500 hover:bg-primary-50 dark:hover:bg-slate-800/50"
+                        >
+                          <ShieldAlert className="h-4.5 w-4.5" />
+                          Admin Dashboard
+                        </Link>
+                        <Link
+                          to="/admin/library"
+                          onClick={() => setShowUserDropdown(false)}
+                          className="flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-xs font-medium text-primary-500 hover:bg-primary-50 dark:hover:bg-slate-800/50"
+                        >
+                          <BookOpen className="h-4.5 w-4.5" />
+                          Manage Library Loans
+                        </Link>
+                      </>
                     )}
 
                     <Link
@@ -294,6 +304,24 @@ const Navbar = () => {
                     >
                       <User className="h-4.5 w-4.5" />
                       My Profile
+                    </Link>
+
+                    <Link
+                      to="/reading-tracker"
+                      onClick={() => setShowUserDropdown(false)}
+                      className="flex-sm flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
+                      <Flame className="h-4.5 w-4.5 text-orange-500" />
+                      Reading Tracker
+                    </Link>
+
+                    <Link
+                      to="/library"
+                      onClick={() => setShowUserDropdown(false)}
+                      className="flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
+                      <BookOpen className="h-4.5 w-4.5 text-primary-500" />
+                      Digital Library
                     </Link>
 
                     <Link

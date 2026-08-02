@@ -26,4 +26,7 @@ public interface BookService {
     // Search Helpers
     void addSearchHistory(Long userId, String query);
     List<String> getSearchSuggestions(String query);
+    
+    // Book Excerpts
+    List<BookExcerptDto> getBookExcerpts(Long bookId);
 }
